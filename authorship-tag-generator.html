@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authorship Tag Generator</title>
+
+  <!-- Basic styling for layout and readability -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      text-align: center;
+    }
+
+    input,
+    button {
+      margin: 0.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .output {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #222;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Authorship Tag Generator</h1>
+
+  <!-- User-visible instructions for correct usage -->
+  <div style="margin-bottom: 1.5rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto; font-size: 0.95rem;">
+    <h2>Instructions</h2>
+    <ul style="line-height: 1.5;">
+      <li>Insert the <strong>Date</strong> in the format <code>ddmmyy</code> (e.g., 080425 for April 8, 2025).</li>
+      <li>Insert a <strong>Secret String</strong> of exactly 6 characters.</li>
+      <li>Allowed characters for the Secret String:</li>
+      <code>A-Z, a-z, 0-9, and symbols: ! @ # $ % ^ & * ( ) _ + - = [ ] { } | ; : , . &lt; &gt; ?</code>
+      <li>Click <strong>Generate Code</strong> to produce a 9-character identifier for printed documents.</li>
+    </ul>
+  </div>
+
+  <!-- Input Form for Date and Secret -->
+  <form id="codeForm">
+    <div>
+      <label for="dateInput">Date (ddmmyy):</label><br />
+      <input type="text" id="dateInput" maxlength="6" required placeholder="e.g., 080425" />
+    </div>
+    <div>
+      <label for="inputString">Secret String (6 characters):</label><br />
+      <input type="text" id="inputString" maxlength="6" required placeholder="Letters, digits, symbols" />
+    </div>
+    <button type="submit">Generate Code</button>
+  </form>
+
+  <!-- Display output code -->
+  <div class="output" id="output"></div>
+
+  <script>
+    // Regular expression for allowed secret string characters (exactly 6)
+    const allowedChars = /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]{6}$/;
+
+    // Base90 character set (62 alphanumerics + 28 symbols)
+    const base90chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+    // Event listener for form submission
+    document.getElementById("codeForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      generateCode();
+    });
+
+    // Main code generation function
+    async function generateCode() {
+      const dateInput = document.getElementById("dateInput").value.trim();
+      const inputString = document.getElementById("inputString").value.trim();
+      const outputElement = document.getElementById("output");
+
+      // Validate date input
+      if (!/^\d{6}$/.test(dateInput)) {
+        outputElement.textContent = "Invalid date format. Use ddmmyy.";
+        return;
+      }
+
+      // Validate secret string input
+      if (!allowedChars.test(inputString)) {
+        outputElement.textContent = "Secret must be 6 characters from A-Z, a-z, 0-9, and selected symbols.";
+        return;
+      }
+
+      const fullInput = dateInput + inputString;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(fullInput);
+
+      try {
+        // Generate SHA-256 hash from combined input
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+        // Convert hash array to BigInt for Base90 conversion
+        const bigInt = hashArray.reduce((acc, byte) => (acc << 8n) + BigInt(byte), 0n);
+
+        // Convert BigInt hash to Base90 code
+        const base90code = toBase90(bigInt).padStart(9, 'A').slice(0, 9); // Always 9 chars
+
+        // Format output code as 3-3-3 blocks
+        const formatted = base90code.match(/.{1,3}/g).join("-");
+
+        outputElement.textContent = "Generated Tag: " + formatted;
+
+      } catch (error) {
+        outputElement.textContent = "Error generating code.";
+        console.error("Hashing error:", error);
+      }
+    }
+
+    // Function to convert BigInt to Base90 string
+    function toBase90(num) {
+      let result = "";
+      const base = BigInt(base90chars.length);
+
+      while (num > 0n && result.length < 9) {
+        result = base90chars[num % base] + result;
+        num = num / base;
+      }
+
+      return result;
+    }
+  </script>
+
+</body>
+
+</html>
