@@ -5,7 +5,7 @@
   https://github.com/ericblindgren/authorship-tag-generator.git
 
   A lightweight browser-based tool for offline authorship tagging of printed documents.
-  Developed by Eric B. Lindgren | Universidade Federal Fluminense
+  Developed by Eric B. Lindgren | Universidade Federal Fluminense | ericlindgren@id.uff.br
 -->
 <html lang="en">
 
@@ -49,7 +49,7 @@
       <li>Insert a <strong>Secret String</strong> of exactly 6 characters.</li>
       <li>Allowed characters for the Secret String:</li>
       <code>A-Z, a-z, 0-9, and symbols: ! @ # $ % ^ & * ( ) _ + - = [ ] { } | ; : , . &lt; &gt; ?</code>
-      <li>Click <strong>Generate Code</strong> to produce a 9-character identifier for printed documents.</li>
+      <li>Click <strong>Generate Tag</strong> to produce a 9-character tag for printed documents.</li>
     </ul>
   </div>
 
@@ -63,7 +63,7 @@
       <label for="inputString">Secret String (6 characters):</label><br />
       <input type="text" id="inputString" maxlength="6" required placeholder="Letters, digits, symbols" />
     </div>
-    <button type="submit">Generate Code</button>
+    <button type="submit">Generate Tag</button>
   </form>
 
   <!-- Display output code -->
@@ -73,8 +73,8 @@
     // Regular expression for allowed secret string characters (exactly 6)
     const allowedChars = /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]{6}$/;
 
-    // Base90 character set (62 alphanumerics + 28 symbols)
-    const base90chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    // Base88 character set (62 alphanumerics + 26 symbols)
+    const base88chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
 
     // Event listener for form submission
     document.getElementById("codeForm").addEventListener("submit", function (event) {
@@ -82,15 +82,37 @@
       generateCode();
     });
 
+    // Helper function to validate that the date string represents a real calendar date.
+    function isValidDate(dateStr) {
+      // Ensure the string is exactly 6 digits
+      if (!/^\d{6}$/.test(dateStr)) return false;
+      
+      // Parse day, month, and year (assuming years 2000-2099)
+      const day = parseInt(dateStr.substring(0, 2), 10);
+      const month = parseInt(dateStr.substring(2, 4), 10);
+      const year = parseInt(dateStr.substring(4, 6), 10) + 2000;
+      
+      // Basic checks
+      if (month < 1 || month > 12 || day < 1) return false;
+      
+      // Create a Date object from the components
+      const dateObj = new Date(year, month - 1, day);
+      
+      // Check that the Date object components match the parsed values
+      return dateObj.getFullYear() === year &&
+             dateObj.getMonth() === (month - 1) &&
+             dateObj.getDate() === day;
+    }
+
     // Main code generation function
     async function generateCode() {
       const dateInput = document.getElementById("dateInput").value.trim();
       const inputString = document.getElementById("inputString").value.trim();
       const outputElement = document.getElementById("output");
 
-      // Validate date input
-      if (!/^\d{6}$/.test(dateInput)) {
-        outputElement.textContent = "Invalid date format. Use ddmmyy.";
+      // Validate that the date is a proper calendar date
+      if (!isValidDate(dateInput)) {
+        outputElement.textContent = "Invalid date. Please enter a valid calendar date in ddmmyy format.";
         return;
       }
 
@@ -109,14 +131,14 @@
         const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-        // Convert hash array to BigInt for Base90 conversion
+        // Convert hash array to BigInt for Base88 conversion
         const bigInt = hashArray.reduce((acc, byte) => (acc << 8n) + BigInt(byte), 0n);
 
-        // Convert BigInt hash to Base90 code
-        const base90code = toBase90(bigInt).padStart(9, 'A').slice(0, 9); // Always 9 chars
+        // Convert BigInt hash to Base88 code
+        const base88code = toBase88(bigInt).padStart(9, 'A').slice(0, 9); // Always 9 chars
 
         // Format output code as 3-3-3 blocks
-        const formatted = base90code.match(/.{1,3}/g).join("-");
+        const formatted = base88code.match(/.{1,3}/g).join("-");
 
         outputElement.textContent = "Generated Tag: " + formatted;
 
@@ -126,13 +148,13 @@
       }
     }
 
-    // Function to convert BigInt to Base90 string
-    function toBase90(num) {
+    // Function to convert BigInt to Base88 string
+    function toBase88(num) {
       let result = "";
-      const base = BigInt(base90chars.length);
+      const base = BigInt(base88chars.length);
 
       while (num > 0n && result.length < 9) {
-        result = base90chars[num % base] + result;
+        result = base88chars[num % base] + result;
         num = num / base;
       }
 
@@ -140,13 +162,13 @@
     }
   </script>
 
-<!-- Footer with GitHub reference -->
-<footer style="margin-top: 3rem; font-size: 0.85rem; color: #555;">
-  Open-source project available at: 
-  <a href="https://github.com/ericblindgren/authorship-tag-generator.git" target="_blank">
-    github.com/ericblindgren/authorship-tag-generator
-  </a>
-</footer>
+  <!-- Footer with GitHub reference -->
+  <footer style="margin-top: 3rem; font-size: 0.85rem; color: #555;">
+    Open-source project available at: 
+    <a href="https://github.com/ericblindgren/authorship-tag-generator.git" target="_blank">
+      github.com/ericblindgren/authorship-tag-generator
+    </a>
+  </footer>
 
 </body>
 
