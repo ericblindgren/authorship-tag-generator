@@ -6,6 +6,7 @@
 
   A lightweight browser-based tool for offline authorship tagging of printed documents.
   Developed by Eric B. Lindgren | Universidade Federal Fluminense | ericlindgren@id.uff.br
+  Support from AI-assisted programming tools was used for optimization and refinement.
 -->
 <html lang="en">
 
@@ -137,8 +138,8 @@
         // Convert BigInt hash to Base88 code
         const base88code = toBase88(bigInt).padStart(9, 'A').slice(0, 9); // Always 9 chars
 
-        // Format output code as 3-3-3 blocks
-        const formatted = base88code.match(/.{1,3}/g).join("-");
+        // Format output code as 3 3 3 blocks
+        const formatted = base88code.match(/.{1,3}/g).join(" ");
 
         outputElement.textContent = "Generated Tag: " + formatted;
 
